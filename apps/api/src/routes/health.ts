@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { redis } from '../config/redis';
 import { prisma } from '@repo/database';
+import { logger } from '../utils/logger';
 
 export const healthRoute = new Hono();
 
@@ -8,7 +9,11 @@ healthRoute.get('/', async (c) => {
   try {
     // Check Redis
     await redis.ping();
-    
+
+
+    // Check database
+    await prisma.$queryRaw`SELECT 1`;
+
     return c.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -18,6 +23,7 @@ healthRoute.get('/', async (c) => {
       },
     });
   } catch (error: any) {
+    logger.error({ error: error.message }, 'Health check failed');
     return c.json({
       status: 'unhealthy',
       error: error.message,

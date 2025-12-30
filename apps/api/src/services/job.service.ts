@@ -58,6 +58,21 @@ export class JobService {
       },
     });
   }
+
+  // Update bullmq job id
+  async updateBullMQJobId(id: string, bullmqJobId: string) {
+    return prisma.analysisJob.update({
+      where: { id },
+      data: { bullmqJobId },
+    });
+  }
+
+  // Delete job (for cleanup on errors)
+  async deleteJob(id: string) {
+    return prisma.analysisJob.delete({
+      where: { id },
+    });
+  }
 }
 
 export const jobService = new JobService();

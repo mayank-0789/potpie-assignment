@@ -21,21 +21,42 @@ analysisRoute.post('/analyze-pr', async (c) => {
 
     logger.info({ repo: validated.repo_url, pr: validated.pr_number }, 'Creating analysis job');
 
-    // Add job to queue
-    const bullmqJob = await analysisQueue.add('analyze-pr', {
-      repo_url: validated.repo_url,
-      pr_number: validated.pr_number,
-      github_token: validated.github_token,
-    });
-
-    // Create db record
+    // Step 1: Create database record first (with temporary bullmqJobId)
     const dbJob = await jobService.createJob({
       repoUrl: validated.repo_url,
       prNumber: validated.pr_number,
-      bullmqJobId: bullmqJob.id!,
+      bullmqJobId: 'pending', // Temporary value
     });
 
-    logger.info({ jobId: dbJob.id, bullmqJobId: bullmqJob.id }, 'Job created successfully');
+    let bullmqJobId: string;
+
+    try {
+      // Step 2: Add job to queue with database job ID
+      const bullmqJob = await analysisQueue.add('analyze-pr', {
+        db_job_id: dbJob.id, // Pass DB ID to worker
+        repo_url: validated.repo_url,
+        pr_number: validated.pr_number,
+        github_token: validated.github_token,
+      });
+
+      if (!bullmqJob.id) {
+        logger.error('Failed to add job to queue');
+        // Clean up database record
+        await jobService.deleteJob(dbJob.id);
+        return c.json({ error: 'Internal server error' }, 500);
+      }
+
+      bullmqJobId = bullmqJob.id;
+
+      // Step 3: Update database record with actual BullMQ job ID
+      await jobService.updateBullMQJobId(dbJob.id, bullmqJobId);
+    } catch (error) {
+      // If queue fails, clean up database record
+      await jobService.deleteJob(dbJob.id);
+      throw error;
+    }
+
+    logger.info({ jobId: dbJob.id, bullmqJobId }, 'Job created successfully');
 
     return c.json({
       task_id: dbJob.id,
