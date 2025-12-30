@@ -1,0 +1,155 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum FileStatus {
+  ADDED
+  MODIFIED
+  REMOVED
+}
+
+enum IssueType {
+  STYLE
+  BUG
+  PERFORMANCE
+  BEST_PRACTICE
+  SECURITY
+}
+
+enum IssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ============================================
+// 1. ANALYSIS JOB (Main table)
+// ============================================
+
+model AnalysisJob {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // GitHub PR Info
+  repoUrl    String
+  repoOwner  String
+  repoName   String
+  prNumber   Int
+  prTitle    String?
+  prAuthor   String?
+
+  // Job Status
+  status      JobStatus @default(PENDING)
+  error       String?   @db.Text
+  
+  // BullMQ Integration
+  bullmqJobId String?   @unique
+  
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+  
+  // Relations
+  result AnalysisResult?
+  files  FileAnalysis[]
+  issues Issue[]
+
+  @@index([repoUrl, prNumber])
+  @@index([status])
+  @@map("analysis_jobs")
+}
+
+// ============================================
+// 2. ANALYSIS RESULT (Summary)
+// ============================================
+
+model AnalysisResult {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  jobId String      @unique
+  job   AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // Summary Metrics
+  totalFiles     Int
+  totalIssues    Int
+  criticalIssues Int
+  highIssues     Int
+  mediumIssues   Int
+  lowIssues      Int
+
+  @@map("analysis_results")
+}
+
+// ============================================
+// 3. FILE ANALYSIS
+// ============================================
+
+model FileAnalysis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  jobId String
+  job   AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // File Info
+  filename  String
+  language  String
+  status    FileStatus
+  additions Int
+  deletions Int
+
+  // Relations
+  issues Issue[]
+
+  @@index([jobId])
+  @@map("file_analyses")
+}
+
+// ============================================
+// 4. ISSUE
+// ============================================
+
+model Issue {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  jobId String
+  job   AnalysisJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  fileId String
+  file   FileAnalysis @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  // Issue Details
+  type        IssueType
+  severity    IssueSeverity
+  line        Int
+  description String @db.Text
+  suggestion  String @db.Text
+
+  @@index([jobId])
+  @@index([fileId])
+  @@index([severity])
+  @@map("issues")
+}

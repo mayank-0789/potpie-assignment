@@ -1,0 +1,32 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "build": "bun build src/index.ts --outdir ./dist --target bun",
+    "test": "bun test",
+    "lint": "echo 'Linting API'",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/database": "*",
+    "bullmq": "^5.15.0",
+    "hono": "^4.11.3",
+    "ioredis": "^5.4.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "redis": "^5.10.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
