@@ -14,7 +14,3 @@ export const redis = new Redis({
 
 redis.on('connect', () => logger.info('Redis connected'));
 redis.on('error', (err) => logger.error({ err }, 'Redis error'));
-
-process.on('SIGTERM', async () => {
-    await redis.quit();
-});

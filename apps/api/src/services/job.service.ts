@@ -14,13 +14,13 @@ export class JobService {
       throw new Error('Invalid GitHub URL format');
     }
 
-    const [, owner, repo] = match;
+    const [, owner = '', repo = ''] = match;
 
     return prisma.analysisJob.create({
       data: {
         repoUrl: data.repoUrl,
-        repoOwner: owner!,
-        repoName: repo?.replace('.git', '') ?? '',
+        repoOwner: owner,
+        repoName: repo.replace('.git', ''),
         prNumber: data.prNumber,
         bullmqJobId: data.bullmqJobId,
         status: JobStatus.PENDING,
@@ -42,7 +42,6 @@ export class JobService {
       },
     });
   }
-
   
   // Get job by db id
   async getJobById(id: string) {

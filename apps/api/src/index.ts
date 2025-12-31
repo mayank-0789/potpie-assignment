@@ -47,13 +47,16 @@ async function startServer() {
     logger.info(`API Server running on http://localhost:${env.PORT}`);
 
     // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      logger.info('SIGTERM received, shutting down gracefully');
+    const shutdown = async (signal: string) => {
+      logger.info(`${signal} received, shutting down gracefully`);
       server.stop();
       await prisma.$disconnect();
       await redis.quit();
       process.exit(0);
-    });
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error: any) {
     logger.error({ error: error.message }, 'Failed to start server');
     process.exit(1);

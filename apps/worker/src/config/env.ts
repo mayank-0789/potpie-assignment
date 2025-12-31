@@ -2,16 +2,21 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().default(3001),
 
-  DATABASE_URL: z.string().optional().default('postgresql://test:test@localhost:5432/test'),
-  
+  // Database
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+
+  // Redis
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
-  REDIS_PASSWORD: z.string().optional(),
 
-  GITHUB_TOKEN: z.string().optional().default('test-token'),
-  
+  // Claude AI
+  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+
+  // GitHub (fallback if not provided in job)
+  GITHUB_TOKEN: z.string().optional(),
+
+  // Logging
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
 });
 

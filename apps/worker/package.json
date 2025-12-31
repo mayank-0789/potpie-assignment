@@ -1,10 +1,26 @@
 {
   "name": "worker",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "NODE_ENV=production bun src/index.ts",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/database": "*",
+    "@repo/code-review": "*",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "bullmq": "^5.15.0",
+    "ioredis": "^5.4.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.24.1"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
     "typescript": "^5"
