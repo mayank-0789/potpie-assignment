@@ -1,4 +1,4 @@
-import type { ParsedFile, ChangedLine } from '@repo/code-review';
+import type { ParsedFile, ChangedLine } from '../models';
 
 export const SYSTEM_PROMPT = `You are an expert code reviewer with deep knowledge of software engineering best practices, security vulnerabilities, and performance optimization.
 

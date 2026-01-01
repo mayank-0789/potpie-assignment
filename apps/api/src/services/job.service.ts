@@ -6,7 +6,6 @@ export class JobService {
   async createJob(data: {
     repoUrl: string;
     prNumber: number;
-    bullmqJobId: string;
   }) {
     // Extract owner and repo from URL
     const match = data.repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
@@ -22,27 +21,11 @@ export class JobService {
         repoOwner: owner,
         repoName: repo.replace('.git', ''),
         prNumber: data.prNumber,
-        bullmqJobId: data.bullmqJobId,
         status: JobStatus.PENDING,
       },
     });
   }
 
-// Get job by bullmq job id
-  async getJobByBullMQId(bullmqJobId: string) {
-    return prisma.analysisJob.findUnique({
-      where: { bullmqJobId },
-      include: {
-        result: true,
-        files: {
-          include: {
-            issues: true,
-          },
-        },
-      },
-    });
-  }
-  
   // Get job by db id
   async getJobById(id: string) {
     return prisma.analysisJob.findUnique({
@@ -55,14 +38,6 @@ export class JobService {
           },
         },
       },
-    });
-  }
-
-  // Update bullmq job id
-  async updateBullMQJobId(id: string, bullmqJobId: string) {
-    return prisma.analysisJob.update({
-      where: { id },
-      data: { bullmqJobId },
     });
   }
 

@@ -1,6 +1,5 @@
 import type { Job } from 'bullmq';
-import { GitHubService, type ParsedFile, type CodeIssue } from '@repo/code-review';
-import { analyzeFile } from './ai/analyzer';
+import { CodeReviewAgent } from '@repo/code-review';
 import { resultService } from './services/result.service';
 import { logger } from './utils/logger';
 import { env } from './config/env';
@@ -28,53 +27,48 @@ export async function processJob(job: Job<JobData>): Promise<void> {
     // Step 1: Update job status to PROCESSING
     await resultService.updateJobStatus(db_job_id, 'PROCESSING');
 
-    // Step 2: Fetch PR data from GitHub
+    // Step 2: Initialize CodeReviewAgent
     const token = github_token || env.GITHUB_TOKEN;
     if (!token) {
       throw new Error('GitHub token not provided');
     }
 
-    logger.info({ jobId: db_job_id }, 'Fetching PR data from GitHub');
-    const githubService = new GitHubService(token);
-    const { pr, files } = await githubService.analyzePR(repo_url, pr_number);
+    logger.info({ jobId: db_job_id }, 'Initializing autonomous code review agent');
+    const agent = new CodeReviewAgent({
+      anthropicApiKey: env.ANTHROPIC_API_KEY,
+      githubToken: token,
+      logger,
+    });
+
+    // Step 3: Run the agent to fetch PR and analyze all files
+    logger.info({ jobId: db_job_id }, 'Running autonomous agent analysis');
+    const agentResult = await agent.analyze(repo_url, pr_number);
+
+    // Check if agent encountered errors
+    if (agentResult.error) {
+      throw new Error(agentResult.error);
+    }
 
     logger.info(
-      { jobId: db_job_id, filesCount: files.length, prTitle: pr.title },
-      'PR data fetched successfully'
+      {
+        jobId: db_job_id,
+        filesAnalyzed: agentResult.analyzedFiles.length,
+        totalIssues: agentResult.analyzedFiles.reduce((sum, r) => sum + r.issues.length, 0),
+      },
+      'Agent analysis complete'
     );
 
-    // Step 3: Update PR metadata in database
-    await resultService.updatePRMetadata(db_job_id, pr.title, pr.user.login);
-
-    // Step 4: Analyze each file with AI
-    logger.info({ jobId: db_job_id, filesCount: files.length }, 'Starting AI analysis');
-
-    const results: Array<{ file: ParsedFile; issues: CodeIssue[] }> = [];
-
-    for (const file of files) {
-      logger.debug(
-        { jobId: db_job_id, filename: file.filename, language: file.language },
-        'Analyzing file'
-      );
-
-      const issues = await analyzeFile(file);
-
-      results.push({ file, issues });
-
-      logger.debug(
-        { jobId: db_job_id, filename: file.filename, issuesFound: issues.length },
-        'File analyzed'
+    // Step 4: Update PR metadata in database
+    if (agentResult.prMetadata) {
+      await resultService.updatePRMetadata(
+        db_job_id,
+        agentResult.prMetadata.title,
+        agentResult.prMetadata.author
       );
     }
 
-    const totalIssues = results.reduce((sum, r) => sum + r.issues.length, 0);
-    logger.info(
-      { jobId: db_job_id, filesAnalyzed: files.length, totalIssues },
-      'AI analysis complete'
-    );
-
     // Step 5: Save all results to database
-    await resultService.saveResults(db_job_id, results);
+    await resultService.saveResults(db_job_id, agentResult.analyzedFiles);
 
     // Step 6: Update job status to COMPLETED
     await resultService.updateJobStatus(db_job_id, 'COMPLETED');

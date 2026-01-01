@@ -7,7 +7,7 @@ export interface GitHubFile {
   patch?: string;  // The git diff - most important!
 }
 
-// GitHub PR metadata (minimal - only what we store in DB)
+// GitHub PR metadata (only what we store in DB)
 export interface GitHubPR {
   title: string;
   user: { login: string };

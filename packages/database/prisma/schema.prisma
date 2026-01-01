@@ -61,10 +61,7 @@ model AnalysisJob {
   // Job Status
   status      JobStatus @default(PENDING)
   error       String?   @db.Text
-  
-  // BullMQ Integration
-  bullmqJobId String?   @unique
-  
+
   // Timing
   startedAt   DateTime?
   completedAt DateTime?

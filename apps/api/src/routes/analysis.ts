@@ -21,14 +21,11 @@ analysisRoute.post('/analyze-pr', async (c) => {
 
     logger.info({ repo: validated.repo_url, pr: validated.pr_number }, 'Creating analysis job');
 
-    // Step 1: Create database record first (with temporary bullmqJobId)
+    // Step 1: Create database record first
     const dbJob = await jobService.createJob({
       repoUrl: validated.repo_url,
       prNumber: validated.pr_number,
-      bullmqJobId: 'pending', // Temporary value
     });
-
-    let bullmqJobId: string;
 
     try {
       // Step 2: Add job to queue with database job ID
@@ -46,17 +43,12 @@ analysisRoute.post('/analyze-pr', async (c) => {
         return c.json({ error: 'Internal server error' }, 500);
       }
 
-      bullmqJobId = bullmqJob.id;
-
-      // Step 3: Update database record with actual BullMQ job ID
-      await jobService.updateBullMQJobId(dbJob.id, bullmqJobId);
+      logger.info({ jobId: dbJob.id, bullmqJobId: bullmqJob.id }, 'Job created successfully');
     } catch (error) {
       // If queue fails, clean up database record
       await jobService.deleteJob(dbJob.id);
       throw error;
     }
-
-    logger.info({ jobId: dbJob.id, bullmqJobId }, 'Job created successfully');
 
     return c.json({
       task_id: dbJob.id,
