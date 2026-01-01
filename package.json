@@ -4,6 +4,10 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:api": "cd apps/api && bun test src/__tests__/api.test.ts",
+    "test:integration": "cd apps/api && bun test src/__tests__/integration.test.ts",
+    "test:agent": "cd packages/code-review && bun test src/__tests__/agent.test.ts",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"

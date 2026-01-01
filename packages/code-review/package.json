@@ -12,6 +12,8 @@
   },
   "scripts": {
     "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:agent": "bun test src/__tests__/agent.test.ts",
     "lint": "echo 'No linting'",
     "check-types": "tsc --noEmit"
   },
