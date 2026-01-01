@@ -39,7 +39,7 @@ This system automatically reviews GitHub pull requests by:
 | Feature | Description |
 |---------|-------------|
 | 🤖 **Autonomous Agent** | LangGraph.js agent framework with state management and autonomous decision-making |
-| 🧠 **AI-Powered Analysis** | Uses Claude 3.5 Sonnet for intelligent code review |
+| 🧠 **AI-Powered Analysis** | Uses OpenRouter for access to multiple AI models (Claude, GPT-4, Gemini, etc.) |
 | ⚡ **Async Processing** | Non-blocking job queue with BullMQ and Redis |
 | 🔍 **Multi-Language Support** | Detects and analyzes TypeScript, JavaScript, Python, Go, Rust, and more |
 | 📊 **Structured Results** | Categorized by type (bug, style, security) and severity (critical, high, medium, low) |
@@ -105,7 +105,7 @@ This system automatically reviews GitHub pull requests by:
 | **API** | Hono | Lightweight web framework | **FastAPI** |
 | **Queue** | BullMQ + Redis | Async job processing | **Celery** |
 | **Database** | PostgreSQL + Prisma | Data persistence with type-safe ORM | SQLAlchemy |
-| **AI** | Claude 3.5 Sonnet | Code analysis and review | Anthropic SDK |
+| **AI** | OpenRouter | Multi-model AI access (Claude, GPT-4, Gemini) | OpenAI SDK |
 | **Validation** | Zod | Runtime type checking | Pydantic |
 | **Logging** | Pino | Fast structured logging | Loguru |
 | **Monorepo** | Turborepo | Build system and task runner | Poetry workspaces |
@@ -216,7 +216,7 @@ The agent operates autonomously through a **state machine** with 4 nodes:
 2. **decide_next** - Makes autonomous decisions based on current state:
    - More files to analyze? → Go to `analyze_file`
    - All files done? → Go to `finish`
-3. **analyze_file** - Analyzes current file using Claude AI tool
+3. **analyze_file** - Analyzes current file using AI (via OpenRouter)
 4. **finish** - Final node, returns complete results
 
 ### Agent State
@@ -251,7 +251,7 @@ The agent uses **tools** to interact with external services (100% code reuse):
 | Tool | Purpose | Wrapped Service |
 |------|---------|-----------------|
 | `fetch_pr_data` | Fetch PR metadata and files from GitHub | `GitHubService` |
-| `analyze_code_file` | Analyze single file with Claude AI | `CodeAnalyzer` |
+| `analyze_code_file` | Analyze single file with AI (OpenRouter) | `CodeAnalyzer` |
 
 **Key Design:** All existing services (`GitHubService`, `CodeAnalyzer`) are **reused** as agent tools - zero code duplication.
 
@@ -334,7 +334,7 @@ The agent logs its decision-making process:
 - [Docker](https://www.docker.com/) and Docker Compose (for Redis)
 - PostgreSQL database (local or [Neon](https://neon.tech/) account)
 - [GitHub Personal Access Token](https://github.com/settings/tokens) (with `repo` scope)
-- [Anthropic API key](https://console.anthropic.com/)
+- [OpenRouter API key](https://openrouter.ai/keys)
 
 ### Installation
 

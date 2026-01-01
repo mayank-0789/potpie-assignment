@@ -8,6 +8,7 @@ import type { CodeIssue, ParsedFile } from "../models";
  */
 export interface CodeReviewAgentConfig {
   anthropicApiKey: string;
+  model?: string;
   githubToken: string;
   logger?: any;
 }
@@ -141,7 +142,7 @@ export class CodeReviewAgent {
 
     try {
       // Create and use the analyze tool
-      const tool = createAnalyzeFileTool(this.config.anthropicApiKey, this.logger);
+      const tool = createAnalyzeFileTool(this.config.anthropicApiKey, this.config.model, this.logger);
       const result = await tool.func({ file });
 
       const parsed = JSON.parse(result);

@@ -25,8 +25,8 @@ app.route('/api', analysisRoute);
 // 404 handler
 app.notFound((c) => c.json({ error: 'Not Found' }, 404));
 
-// Startup checks and server initialization
-async function startServer() {
+// Startup checks
+async function init() {
   try {
     // Check database connection
     logger.info('Checking database connection...');
@@ -38,18 +38,11 @@ async function startServer() {
     await redis.ping();
     logger.info('Redis connected');
 
-    // Start server
-    const server = Bun.serve({
-      port: env.PORT,
-      fetch: app.fetch,
-    });
-
-    logger.info(`API Server running on http://localhost:${env.PORT}`);
+    logger.info(`API Server ready on http://localhost:${env.PORT}`);
 
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully`);
-      server.stop();
       await prisma.$disconnect();
       await redis.quit();
       process.exit(0);
@@ -58,12 +51,12 @@ async function startServer() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
   } catch (error: any) {
-    logger.error({ error: error.message }, 'Failed to start server');
+    logger.error({ error: error.message }, 'Failed to initialize server');
     process.exit(1);
   }
 }
 
-// Start the server
-startServer();
+// Initialize connections
+init();
 
 export default app;

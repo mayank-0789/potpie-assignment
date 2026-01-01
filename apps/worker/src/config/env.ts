@@ -10,8 +10,9 @@ const envSchema = z.object({
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
 
-  // Claude AI
-  ANTHROPIC_API_KEY: z.string().min(1, 'ANTHROPIC_API_KEY is required'),
+  // OpenRouter AI
+  OPENROUTER_API_KEY: z.string().min(1, 'OPENROUTER_API_KEY is required'),
+  AI_MODEL: z.string().default('anthropic/claude-3.5-sonnet'),
 
   // GitHub (fallback if not provided in job)
   GITHUB_TOKEN: z.string().optional(),

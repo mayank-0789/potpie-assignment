@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import type { ParsedFile, CodeIssue, IssueType, IssueSeverity } from '../models';
 import { SYSTEM_PROMPT, buildAnalysisPrompt } from './prompts';
 
@@ -14,6 +14,7 @@ interface AIResponse {
 
 interface AnalyzerConfig {
   apiKey: string;
+  model?: string; // Optional: specify which model to use
   logger?: {
     info: (obj: any, msg?: string) => void;
     warn: (obj: any, msg?: string) => void;
@@ -22,16 +23,25 @@ interface AnalyzerConfig {
 }
 
 /**
- * Code Analyzer using Claude AI
+ * Code Analyzer using AI via OpenRouter
+ * Supports multiple AI models through OpenRouter's unified API
  */
 export class CodeAnalyzer {
-  private anthropic: Anthropic;
+  private client: OpenAI;
+  private model: string;
   private logger?: AnalyzerConfig['logger'];
 
   constructor(config: AnalyzerConfig) {
-    this.anthropic = new Anthropic({
+    this.client = new OpenAI({
       apiKey: config.apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': 'https://github.com/your-repo', // Optional: for OpenRouter rankings
+        'X-Title': 'AI Code Review Agent', // Optional: shows in OpenRouter dashboard
+      },
     });
+    // Default to Claude 3.5 Sonnet, but allow override
+    this.model = config.model || 'anthropic/claude-3.5-sonnet';
     this.logger = config.logger;
   }
 
@@ -74,15 +84,18 @@ export class CodeAnalyzer {
   }
 
   /**
-   * Call Claude API
+   * Call AI API via OpenRouter
    */
   private async callClaude(prompt: string): Promise<string> {
-    const message = await this.anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const completion = await this.client.chat.completions.create({
+      model: this.model,
       max_tokens: 4096,
       temperature: 0.3, // Lower temperature for more consistent analysis
-      system: SYSTEM_PROMPT,
       messages: [
+        {
+          role: 'system',
+          content: SYSTEM_PROMPT,
+        },
         {
           role: 'user',
           content: prompt,
@@ -90,12 +103,12 @@ export class CodeAnalyzer {
       ],
     });
 
-    const content = message.content[0];
-    if (content && content.type === 'text') {
-      return content.text;
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('Unexpected response format from AI');
     }
 
-    throw new Error('Unexpected response format from Claude');
+    return content;
   }
 
   /**

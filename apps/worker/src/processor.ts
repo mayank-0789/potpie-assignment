@@ -35,7 +35,8 @@ export async function processJob(job: Job<JobData>): Promise<void> {
 
     logger.info({ jobId: db_job_id }, 'Initializing autonomous code review agent');
     const agent = new CodeReviewAgent({
-      anthropicApiKey: env.ANTHROPIC_API_KEY,
+      anthropicApiKey: env.OPENROUTER_API_KEY,
+      model: env.AI_MODEL,
       githubToken: token,
       logger,
     });

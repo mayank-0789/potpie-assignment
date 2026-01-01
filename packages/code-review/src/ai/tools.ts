@@ -40,13 +40,14 @@ export function createFetchPRTool(githubToken: string) {
  * Tool 2: Analyze Code File with AI
  *
  * This tool wraps the existing CodeAnalyzer to analyze a single file.
- * It reuses all the existing logic for prompt building, Claude API calls,
+ * It reuses all the existing logic for prompt building, AI API calls,
  * response parsing, and issue validation.
  */
-export function createAnalyzeFileTool(anthropicApiKey: string, logger?: any) {
+export function createAnalyzeFileTool(anthropicApiKey: string, model?: string, logger?: any) {
   // REUSE existing CodeAnalyzer
   const codeAnalyzer = new CodeAnalyzer({
     apiKey: anthropicApiKey,
+    model,
     logger,
   });
 

@@ -16,11 +16,11 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
-    "@octokit/rest": "^21.0.2",
-    "@langchain/langgraph": "^0.2.19",
     "@langchain/anthropic": "^0.3.11",
     "@langchain/core": "^0.3.21",
+    "@langchain/langgraph": "^0.2.19",
+    "@octokit/rest": "^21.0.2",
+    "openai": "^6.15.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
