@@ -5,12 +5,12 @@ async function main() {
   
   // Test query
   const count = await prisma.analysisJob.count();
-  console.log(`✅ Connected! Found ${count} analysis jobs.`);
+  console.log(`Connected! Found ${count} analysis jobs.`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Connection failed:', e);
+    console.error('Connection failed:', e);
     process.exit(1);
   })
   .finally(async () => {

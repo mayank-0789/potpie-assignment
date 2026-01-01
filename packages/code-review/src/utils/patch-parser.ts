@@ -1,23 +1,13 @@
 import type { ChangedLine } from '../models/github';
 
-/**
- * Parse git diff patch to extract changed lines
- *
- * Patch format example:
- * @@ -10,7 +10,8 @@ function example() {
- *   context line
- * - removed line
- * + added line
- *   context line
- */
+// Parses git diff patch to extract changed lines: handles hunk headers (@@), skips metadata, parses added/removed/context lines
 export function parsePatch(patch: string): ChangedLine[] {
   const lines = patch.split('\n');
   const changes: ChangedLine[] = [];
-
   let currentLineNumber = 0;
 
   for (const line of lines) {
-    // Parse hunk header: @@ -10,7 +10,8 @@
+    // Parse hunk header to get starting line number (e.g., @@ -10,7 +10,8 @@)
     if (line.startsWith('@@')) {
       const match = line.match(/\+(\d+)/);
       if (match && match[1]) {
@@ -26,42 +16,42 @@ export function parsePatch(patch: string): ChangedLine[] {
       continue;
     }
 
-    // Skip diff metadata
-    if (line.startsWith('diff --git') ||
-        line.startsWith('index ') ||
-        line.startsWith('---') ||
-        line.startsWith('+++')) {
+    // Skip diff metadata lines
+    if (line.startsWith('diff --git') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) {
       continue;
     }
 
-    // Parse actual changes
+    // Parse added lines (starts with +)
     if (line.startsWith('+')) {
       changes.push({
         lineNumber: currentLineNumber,
-        content: line.substring(1), // Remove the '+' prefix
+        content: line.substring(1), // Remove '+' prefix
         type: 'added',
       });
       currentLineNumber++;
-    } else if (line.startsWith('-')) {
+    } 
+    // Parse removed lines (starts with -)
+    else if (line.startsWith('-')) {
       changes.push({
         lineNumber: currentLineNumber,
-        content: line.substring(1), // Remove the '-' prefix
+        content: line.substring(1), // Remove '-' prefix
         type: 'removed',
       });
       // Don't increment line number for removed lines
-    } else if (line.startsWith(' ')) {
-      // Context line
+    } 
+    // Parse context lines (starts with space)
+    else if (line.startsWith(' ')) {
       changes.push({
         lineNumber: currentLineNumber,
-        content: line.substring(1), // Remove the ' ' prefix
+        content: line.substring(1), // Remove space prefix
         type: 'context',
       });
       currentLineNumber++;
-    } else if (line === '') {
-      // Empty line
+    } 
+    // Handle empty lines or context without prefix
+    else if (line === '') {
       continue;
     } else {
-      // Context line without prefix (shouldn't happen in proper diffs, but handle it)
       changes.push({
         lineNumber: currentLineNumber,
         content: line,

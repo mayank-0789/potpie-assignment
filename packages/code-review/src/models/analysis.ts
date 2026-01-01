@@ -1,4 +1,4 @@
-// Issue types matching database schema
+// Issue types matching database schema enum
 export enum IssueType {
   STYLE = 'STYLE',
   BUG = 'BUG',
@@ -7,6 +7,7 @@ export enum IssueType {
   SECURITY = 'SECURITY',
 }
 
+// Issue severity levels matching database schema enum
 export enum IssueSeverity {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',
@@ -14,7 +15,7 @@ export enum IssueSeverity {
   CRITICAL = 'CRITICAL',
 }
 
-// Code issue
+// Code issue found during analysis: type, severity, line number, description, and fix suggestion
 export interface CodeIssue {
   type: IssueType;
   severity: IssueSeverity;
@@ -23,7 +24,7 @@ export interface CodeIssue {
   suggestion: string;
 }
 
-// Analysis result for a single file (used by worker)
+// Analysis result for a single file (used by worker to store results)
 export interface FileAnalysisResult {
   filename: string;
   language: string;

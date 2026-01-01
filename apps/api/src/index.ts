@@ -11,36 +11,34 @@ import { redis } from './config/redis';
 
 const app = new Hono();
 
-// Middleware
+// Middleware: request logging and CORS
 app.use('*', honoLogger());
 app.use('*', cors());
 
-// Error handling
+// Error handling: global error handler for all routes
 app.onError(errorHandler);
 
-// Routes
+// Routes: health check and PR analysis endpoints
 app.route('/health', healthRoute);
 app.route('/api', analysisRoute);
 
-// 404 handler
+// 404 handler: returns JSON error for unmatched routes
 app.notFound((c) => c.json({ error: 'Not Found' }, 404));
 
-// Startup checks
+// Startup checks: verifies database and Redis connections before starting server
 async function init() {
   try {
-    // Check database connection
     logger.info('Checking database connection...');
     await prisma.$connect();
     logger.info('Database connected');
 
-    // Check Redis connection
     logger.info('Checking Redis connection...');
     await redis.ping();
     logger.info('Redis connected');
 
     logger.info(`API Server ready on http://localhost:${env.PORT}`);
 
-    // Graceful shutdown
+    // Graceful shutdown: disconnects database and Redis, then exits
     const shutdown = async (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully`);
       await prisma.$disconnect();
@@ -56,7 +54,7 @@ async function init() {
   }
 }
 
-// Initialize connections
+// Initialize connections and start server
 init();
 
 export default app;

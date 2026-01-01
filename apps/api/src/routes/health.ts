@@ -5,13 +5,10 @@ import { logger } from '../utils/logger';
 
 export const healthRoute = new Hono();
 
+// GET /health: health check endpoint - verifies Redis and database connectivity
 healthRoute.get('/', async (c) => {
   try {
-    // Check Redis
     await redis.ping();
-
-
-    // Check database
     await prisma.$queryRaw`SELECT 1`;
 
     return c.json({

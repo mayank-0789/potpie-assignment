@@ -12,9 +12,7 @@ export class GitHubService {
     });
   }
 
-  /**
-   * Parse GitHub repo URL to extract owner and repo name
-   */
+  // Parses GitHub repo URL to extract owner and repo name (e.g., "github.com/owner/repo" → { owner: "owner", repo: "repo" })
   private parseRepoUrl(repoUrl: string): { owner: string; repo: string } {
     const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
     if (!match) {
@@ -28,9 +26,7 @@ export class GitHubService {
     };
   }
 
-  /**
-   * Get PR details
-   */
+  // Fetches PR metadata (title, author) from GitHub API
   async getPR(owner: string, repo: string, prNumber: number): Promise<GitHubPR> {
     try {
       const response = await this.octokit.pulls.get({
@@ -50,16 +46,14 @@ export class GitHubService {
     }
   }
 
-  /**
-   * Get all files changed in a PR
-   */
+  // Fetches all changed files in a PR from GitHub API (max 100 files per page)
   async getPRFiles(owner: string, repo: string, prNumber: number): Promise<GitHubFile[]> {
     try {
       const response = await this.octokit.pulls.listFiles({
         owner,
         repo,
         pull_number: prNumber,
-        per_page: 100, // Max files to fetch
+        per_page: 100,
       });
 
       return response.data.map(file => ({
@@ -74,26 +68,20 @@ export class GitHubService {
     }
   }
 
-  /**
-   * Main method: Analyze a PR and return parsed files ready for AI analysis
-   */
+  // Main method: fetches PR metadata and files, filters/parses them, and returns parsed files ready for AI analysis
   async analyzePR(repoUrl: string, prNumber: number): Promise<{
     pr: GitHubPR;
     files: ParsedFile[];
   }> {
     const { owner, repo } = this.parseRepoUrl(repoUrl);
 
-    // Fetch PR details
     const pr = await this.getPR(owner, repo, prNumber);
-
-    // Fetch all files in the PR
     const githubFiles = await this.getPRFiles(owner, repo, prNumber);
 
-    // Parse and filter files
     const parsedFiles: ParsedFile[] = [];
 
     for (const file of githubFiles) {
-      // Skip files we don't want to analyze
+      // Skip files that shouldn't be analyzed (config files, lock files, etc.)
       if (!shouldAnalyzeFile(file.filename)) {
         continue;
       }
@@ -103,10 +91,7 @@ export class GitHubService {
         continue;
       }
 
-      // Detect language
       const language = detectLanguage(file.filename);
-
-      // Parse patch if available
       const changes = file.patch ? parsePatch(file.patch) : [];
 
       parsedFiles.push({

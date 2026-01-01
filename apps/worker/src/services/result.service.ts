@@ -3,9 +3,7 @@ import type { ParsedFile, CodeIssue } from '@repo/code-review';
 import { logger } from '../utils/logger';
 
 export class ResultService {
-  /**
-   * Update job status
-   */
+  // Updates job status in database: sets startedAt for PROCESSING, completedAt and duration for COMPLETED/FAILED, stores error if provided
   async updateJobStatus(
     jobId: string,
     status: JobStatus,
@@ -18,7 +16,7 @@ export class ResultService {
     } else if (status === 'COMPLETED' || status === 'FAILED') {
       updateData.completedAt = new Date();
 
-      // Calculate duration
+      // Calculate duration from start time
       const job = await prisma.analysisJob.findUnique({
         where: { id: jobId },
         select: { startedAt: true },
@@ -41,9 +39,7 @@ export class ResultService {
     logger.info({ jobId, status }, 'Job status updated');
   }
 
-  /**
-   * Update PR metadata
-   */
+  // Updates PR metadata (title and author) in the job record
   async updatePRMetadata(
     jobId: string,
     title: string,
@@ -60,39 +56,31 @@ export class ResultService {
     logger.debug({ jobId, title, author }, 'PR metadata updated');
   }
 
-  /**
-   * Save complete analysis results
-   */
+  // Saves complete analysis results: saves each file with its issues, then creates summary with issue counts by severity
   async saveResults(
     jobId: string,
     results: Array<{ file: ParsedFile; issues: CodeIssue[] }>
   ): Promise<void> {
     logger.info({ jobId, filesCount: results.length }, 'Saving analysis results');
 
-    // Save each file and its issues
     for (const { file, issues } of results) {
       await this.saveFileAnalysis(jobId, file, issues);
     }
 
-    // Create summary
     await this.createSummary(jobId, results);
 
     logger.info({ jobId }, 'Analysis results saved successfully');
   }
 
-  /**
-   * Save file analysis and its issues
-   */
+  // Saves file analysis record and its issues: maps file status to enum, creates file record, then saves all issues
   private async saveFileAnalysis(
     jobId: string,
     file: ParsedFile,
     issues: CodeIssue[]
   ): Promise<void> {
-    // Map status to FileStatus enum
     const fileStatus: FileStatus =
       file.status === 'added' ? 'ADDED' : file.status === 'modified' ? 'MODIFIED' : 'REMOVED';
 
-    // Create FileAnalysis record
     const fileRecord = await prisma.fileAnalysis.create({
       data: {
         jobId,
@@ -109,21 +97,17 @@ export class ResultService {
       'File analysis saved'
     );
 
-    // Save issues for this file
     if (issues.length > 0) {
       await this.saveIssues(jobId, fileRecord.id, issues);
     }
   }
 
-  /**
-   * Save issues for a file
-   */
+  // Bulk inserts issues for a file: maps CodeIssue to database Issue format
   private async saveIssues(
     jobId: string,
     fileId: string,
     issues: CodeIssue[]
   ): Promise<void> {
-    // Bulk insert issues
     await prisma.issue.createMany({
       data: issues.map(issue => ({
         jobId,
@@ -142,9 +126,7 @@ export class ResultService {
     );
   }
 
-  /**
-   * Create analysis summary
-   */
+  // Creates analysis summary: counts total files, total issues, and issues by severity level (critical, high, medium, low)
   private async createSummary(
     jobId: string,
     results: Array<{ file: ParsedFile; issues: CodeIssue[] }>
@@ -153,7 +135,6 @@ export class ResultService {
     const allIssues = results.flatMap(r => r.issues);
     const totalIssues = allIssues.length;
 
-    // Count by severity
     const criticalIssues = allIssues.filter(i => i.severity === 'CRITICAL').length;
     const highIssues = allIssues.filter(i => i.severity === 'HIGH').length;
     const mediumIssues = allIssues.filter(i => i.severity === 'MEDIUM').length;

@@ -1,6 +1,7 @@
 import { Queue } from 'bullmq';
 import { redis } from '../config/redis';
 
+// BullMQ queue for PR analysis jobs: 3 retry attempts with exponential backoff, keeps completed jobs 1 hour, failed jobs 24 hours
 export const analysisQueue = new Queue('pr-analysis', {
   connection: redis,
   defaultJobOptions: {
@@ -10,11 +11,11 @@ export const analysisQueue = new Queue('pr-analysis', {
       delay: 2000,
     },
     removeOnComplete: {
-      age: 3600, // Keep completed jobs for 1 hour
+      age: 3600,
       count: 100,
     },
     removeOnFail: {
-      age: 86400, // Keep failed jobs for 24 hours
+      age: 86400,
     },
   },
 });

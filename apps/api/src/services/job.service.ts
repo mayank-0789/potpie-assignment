@@ -1,13 +1,11 @@
 import { prisma, JobStatus } from '@repo/database';
 
 export class JobService {
-  
-// Create a new analysis job in db
+  // Creates new analysis job in database: extracts owner/repo from GitHub URL, sets status to PENDING
   async createJob(data: {
     repoUrl: string;
     prNumber: number;
   }) {
-    // Extract owner and repo from URL
     const match = data.repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
     if (!match) {
       throw new Error('Invalid GitHub URL format');
@@ -26,7 +24,7 @@ export class JobService {
     });
   }
 
-  // Get job by db id
+  // Gets job by database ID: includes result summary, files, and all issues
   async getJobById(id: string) {
     return prisma.analysisJob.findUnique({
       where: { id },
@@ -41,7 +39,7 @@ export class JobService {
     });
   }
 
-  // Delete job (for cleanup on errors)
+  // Deletes job by ID: used for cleanup when queue operations fail
   async deleteJob(id: string) {
     return prisma.analysisJob.delete({
       where: { id },

@@ -22,10 +22,7 @@ interface AnalyzerConfig {
   };
 }
 
-/**
- * Code Analyzer using AI via OpenRouter
- * Supports multiple AI models through OpenRouter's unified API
- */
+// Code Analyzer using AI via OpenRouter - supports multiple AI models through unified API
 export class CodeAnalyzer {
   private client: OpenAI;
   private model: string;
@@ -36,35 +33,26 @@ export class CodeAnalyzer {
       apiKey: config.apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
-        'HTTP-Referer': 'https://github.com/your-repo', // Optional: for OpenRouter rankings
-        'X-Title': 'AI Code Review Agent', // Optional: shows in OpenRouter dashboard
+        'HTTP-Referer': 'https://github.com/your-repo', // For OpenRouter rankings
+        'X-Title': 'AI Code Review Agent', // Shows in OpenRouter dashboard
       },
     });
-    // Default to Claude 3.5 Sonnet, but allow override
-    this.model = config.model || 'anthropic/claude-3.5-sonnet';
+    this.model = config.model || 'anthropic/claude-3.5-sonnet'; // Default to Claude 3.5 Sonnet
     this.logger = config.logger;
   }
 
-  /**
-   * Analyze a file using Claude AI
-   */
+  // Analyzes a file using AI: builds prompt, calls API, parses response, and returns issues (returns empty array on error)
   async analyzeFile(file: ParsedFile): Promise<CodeIssue[]> {
     try {
       this.logger?.info({ filename: file.filename, language: file.language }, 'Analyzing file with AI');
 
-      // Build prompt
       const prompt = buildAnalysisPrompt(file);
-
-      // Skip if no added lines
       if (!prompt) {
         this.logger?.info({ filename: file.filename }, 'No added lines to analyze');
         return [];
       }
 
-      // Call Claude API
       const response = await this.callClaude(prompt);
-
-      // Parse and validate response
       const issues = this.parseAIResponse(response, file.filename);
 
       this.logger?.info(
@@ -78,28 +66,19 @@ export class CodeAnalyzer {
         { filename: file.filename, error: error.message },
         'Failed to analyze file with AI'
       );
-      // Don't fail the entire job if one file fails
-      return [];
+      return []; // Don't fail entire job if one file fails
     }
   }
 
-  /**
-   * Call AI API via OpenRouter
-   */
+  // Calls AI API via OpenRouter with system prompt and user prompt, returns AI response content
   private async callClaude(prompt: string): Promise<string> {
     const completion = await this.client.chat.completions.create({
       model: this.model,
       max_tokens: 4096,
       temperature: 0.3, // Lower temperature for more consistent analysis
       messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: prompt },
       ],
     });
 
@@ -111,15 +90,12 @@ export class CodeAnalyzer {
     return content;
   }
 
-  /**
-   * Parse AI response into CodeIssue[]
-   */
+  // Parses AI response JSON (removes markdown code blocks if present), validates issues, and returns CodeIssue array
   private parseAIResponse(response: string, filename: string): CodeIssue[] {
     try {
-      // Extract JSON from response (Claude might wrap it in markdown)
       let jsonStr = response.trim();
 
-      // Remove markdown code blocks if present
+      // Remove markdown code blocks if AI wrapped response in them
       if (jsonStr.startsWith('```json')) {
         jsonStr = jsonStr.replace(/```json\s*/, '').replace(/```\s*$/, '');
       } else if (jsonStr.startsWith('```')) {
@@ -133,7 +109,7 @@ export class CodeAnalyzer {
         return [];
       }
 
-      // Validate and transform issues
+      // Validate and transform each issue, skip invalid ones
       const issues: CodeIssue[] = [];
       for (const issue of parsed.issues) {
         try {
@@ -157,36 +133,29 @@ export class CodeAnalyzer {
     }
   }
 
-  /**
-   * Validate and transform a single issue
-   */
+  // Validates and transforms a single issue: checks type, severity, line number, description, and suggestion
   private validateIssue(issue: any): CodeIssue {
-    // Validate type
     const validTypesStrings = ['STYLE', 'BUG', 'PERFORMANCE', 'BEST_PRACTICE', 'SECURITY'];
     const type = issue.type?.toUpperCase();
     if (!validTypesStrings.includes(type)) {
       throw new Error(`Invalid issue type: ${issue.type}`);
     }
 
-    // Validate severity
     const validSeveritiesStrings = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     const severity = issue.severity?.toUpperCase();
     if (!validSeveritiesStrings.includes(severity)) {
       throw new Error(`Invalid severity: ${issue.severity}`);
     }
 
-    // Validate line number
     const line = parseInt(issue.line);
     if (isNaN(line) || line < 1) {
       throw new Error(`Invalid line number: ${issue.line}`);
     }
 
-    // Validate description
     if (!issue.description || typeof issue.description !== 'string') {
       throw new Error('Missing or invalid description');
     }
 
-    // Validate suggestion
     if (!issue.suggestion || typeof issue.suggestion !== 'string') {
       throw new Error('Missing or invalid suggestion');
     }

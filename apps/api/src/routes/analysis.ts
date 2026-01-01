@@ -6,14 +6,14 @@ import { logger } from '../utils/logger';
 
 export const analysisRoute = new Hono();
 
-// Request validation schema
+// Request validation schema: validates GitHub URL, PR number, and optional GitHub token
 const analyzePRSchema = z.object({
   repo_url: z.string().url().regex(/github\.com/, 'Must be a GitHub URL'),
   pr_number: z.number().int().positive(),
   github_token: z.string().optional(),
 });
 
-// Analyze PR -> /api/analyze-pr (POST)
+// POST /api/analyze-pr: creates analysis job in database, adds to queue, returns task ID
 analysisRoute.post('/analyze-pr', async (c) => {
   try {
     const body = await c.req.json();
@@ -21,16 +21,16 @@ analysisRoute.post('/analyze-pr', async (c) => {
 
     logger.info({ repo: validated.repo_url, pr: validated.pr_number }, 'Creating analysis job');
 
-    // Step 1: Create database record first
+    // Create database record first
     const dbJob = await jobService.createJob({
       repoUrl: validated.repo_url,
       prNumber: validated.pr_number,
     });
 
     try {
-      // Step 2: Add job to queue with database job ID
+      // Add job to queue with database job ID (cleans up DB record if queue fails)
       const bullmqJob = await analysisQueue.add('analyze-pr', {
-        db_job_id: dbJob.id, // Pass DB ID to worker
+        db_job_id: dbJob.id,
         repo_url: validated.repo_url,
         pr_number: validated.pr_number,
         github_token: validated.github_token,
@@ -38,15 +38,13 @@ analysisRoute.post('/analyze-pr', async (c) => {
 
       if (!bullmqJob.id) {
         logger.error('Failed to add job to queue');
-        // Clean up database record
         await jobService.deleteJob(dbJob.id);
         return c.json({ error: 'Internal server error' }, 500);
       }
 
       logger.info({ jobId: dbJob.id, bullmqJobId: bullmqJob.id }, 'Job created successfully');
     } catch (error) {
-      // If queue fails, clean up database record
-      await jobService.deleteJob(dbJob.id);
+      await jobService.deleteJob(dbJob.id); // Clean up database record if queue fails
       throw error;
     }
 
@@ -68,7 +66,7 @@ analysisRoute.post('/analyze-pr', async (c) => {
   }
 });
 
-// Get job status -> /api/status/:task_id
+// GET /api/status/:task_id: returns current status of analysis job (pending, processing, completed, failed)
 analysisRoute.get('/status/:task_id', async (c) => {
   const taskId = c.req.param('task_id');
   
@@ -90,7 +88,7 @@ analysisRoute.get('/status/:task_id', async (c) => {
   }
 });
 
-// Get job results -> /api/results/:task_id (GET)
+// GET /api/results/:task_id: returns analysis results (files, issues, summary) for completed jobs only
 analysisRoute.get('/results/:task_id', async (c) => {
   const taskId = c.req.param('task_id');
   
@@ -117,7 +115,7 @@ analysisRoute.get('/results/:task_id', async (c) => {
       }, 400);
     }
 
-    // Format response
+    // Format response with files, issues, and summary
     const response = {
       task_id: taskId,
       status: 'completed',

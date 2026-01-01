@@ -16,11 +16,12 @@ For each issue you find, provide:
 
 Focus on issues in the ADDED lines (lines that start with +). Be thorough but avoid false positives.`;
 
+// Builds AI analysis prompt for a file: includes file info, formatted changes, and JSON response format instructions
 export function buildAnalysisPrompt(file: ParsedFile): string {
   const addedLines = file.changes.filter(c => c.type === 'added');
 
   if (addedLines.length === 0) {
-    return '';
+    return ''; // No added lines to analyze
   }
 
   const changesFormatted = formatChanges(file.changes);
@@ -58,6 +59,7 @@ Important:
 - Avoid false positives - only report genuine issues`;
 }
 
+// Formats changed lines for AI prompt: adds prefix (+ for added, - for removed, space for context) and line numbers
 function formatChanges(changes: ChangedLine[]): string {
   return changes.map(change => {
     const prefix = change.type === 'added' ? '+' : change.type === 'removed' ? '-' : ' ';

@@ -11,10 +11,7 @@ interface JobData {
   github_token?: string;
 }
 
-/**
- * Main job processor
- * Orchestrates the entire PR analysis flow
- */
+// Main job processor: orchestrates entire PR analysis flow - updates status, runs agent, saves results, handles errors
 export async function processJob(job: Job<JobData>): Promise<void> {
   const { db_job_id, repo_url, pr_number, github_token } = job.data;
 
@@ -24,10 +21,8 @@ export async function processJob(job: Job<JobData>): Promise<void> {
   );
 
   try {
-    // Step 1: Update job status to PROCESSING
     await resultService.updateJobStatus(db_job_id, 'PROCESSING');
 
-    // Step 2: Initialize CodeReviewAgent
     const token = github_token || env.GITHUB_TOKEN;
     if (!token) {
       throw new Error('GitHub token not provided');
@@ -41,11 +36,9 @@ export async function processJob(job: Job<JobData>): Promise<void> {
       logger,
     });
 
-    // Step 3: Run the agent to fetch PR and analyze all files
     logger.info({ jobId: db_job_id }, 'Running autonomous agent analysis');
     const agentResult = await agent.analyze(repo_url, pr_number);
 
-    // Check if agent encountered errors
     if (agentResult.error) {
       throw new Error(agentResult.error);
     }
@@ -59,7 +52,7 @@ export async function processJob(job: Job<JobData>): Promise<void> {
       'Agent analysis complete'
     );
 
-    // Step 4: Update PR metadata in database
+    // Update PR metadata if available
     if (agentResult.prMetadata) {
       await resultService.updatePRMetadata(
         db_job_id,
@@ -68,10 +61,7 @@ export async function processJob(job: Job<JobData>): Promise<void> {
       );
     }
 
-    // Step 5: Save all results to database
     await resultService.saveResults(db_job_id, agentResult.analyzedFiles);
-
-    // Step 6: Update job status to COMPLETED
     await resultService.updateJobStatus(db_job_id, 'COMPLETED');
 
     logger.info({ jobId: db_job_id }, 'Job completed successfully');
@@ -81,10 +71,7 @@ export async function processJob(job: Job<JobData>): Promise<void> {
       'Job failed'
     );
 
-    // Update job status to FAILED with error message
     await resultService.updateJobStatus(db_job_id, 'FAILED', error.message);
-
-    // Re-throw error so BullMQ knows the job failed
-    throw error;
+    throw error; // Re-throw so BullMQ knows the job failed
   }
 }

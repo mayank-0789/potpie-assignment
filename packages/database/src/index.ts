@@ -1,5 +1,3 @@
-// Export Prisma types
+// Export Prisma types and client instance
 export * from '@prisma/client';
-
-// Export Prisma client instance
 export { prisma } from './client';

@@ -1,81 +1,28 @@
-/**
- * Detect programming language from filename
- */
+// Detects programming language from file extension (returns 'unknown' if extension not recognized)
 export function detectLanguage(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
 
   const languageMap: Record<string, string> = {
-    // JavaScript/TypeScript
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'ts': 'typescript',
-    'tsx': 'typescript',
-    'mjs': 'javascript',
-    'cjs': 'javascript',
-
-    // Python
-    'py': 'python',
-    'pyw': 'python',
-
-    // Java
+    'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript', 'tsx': 'typescript', 'mjs': 'javascript', 'cjs': 'javascript',
+    'py': 'python', 'pyw': 'python',
     'java': 'java',
-
-    // C/C++
-    'c': 'c',
-    'cpp': 'cpp',
-    'cc': 'cpp',
-    'cxx': 'cpp',
-    'h': 'c',
-    'hpp': 'cpp',
-
-    // Go
+    'c': 'c', 'cpp': 'cpp', 'cc': 'cpp', 'cxx': 'cpp', 'h': 'c', 'hpp': 'cpp',
     'go': 'go',
-
-    // Rust
     'rs': 'rust',
-
-    // Ruby
     'rb': 'ruby',
-
-    // PHP
     'php': 'php',
-
-    // Swift
     'swift': 'swift',
-
-    // Kotlin
-    'kt': 'kotlin',
-    'kts': 'kotlin',
-
-    // C#
+    'kt': 'kotlin', 'kts': 'kotlin',
     'cs': 'csharp',
-
-    // Markup/Config
-    'html': 'html',
-    'css': 'css',
-    'scss': 'scss',
-    'sass': 'sass',
-    'json': 'json',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'xml': 'xml',
-    'md': 'markdown',
-
-    // Shell
-    'sh': 'shell',
-    'bash': 'shell',
-    'zsh': 'shell',
-
-    // SQL
+    'html': 'html', 'css': 'css', 'scss': 'scss', 'sass': 'sass', 'json': 'json', 'yaml': 'yaml', 'yml': 'yaml', 'xml': 'xml', 'md': 'markdown',
+    'sh': 'shell', 'bash': 'shell', 'zsh': 'shell',
     'sql': 'sql',
   };
 
   return languageMap[ext || ''] || 'unknown';
 }
 
-/**
- * Check if file should be analyzed
- */
+// Checks if file should be analyzed: skips non-code files (json, yaml, etc.) and common build/test/config patterns
 export function shouldAnalyzeFile(filename: string): boolean {
   const language = detectLanguage(filename);
 
@@ -85,20 +32,11 @@ export function shouldAnalyzeFile(filename: string): boolean {
     return false;
   }
 
-  // Skip certain file patterns
+  // Skip common patterns: node_modules, minified files, test files, lock files, config files, build outputs
   const skipPatterns = [
-    /node_modules\//,
-    /\.min\./,
-    /\.test\./,
-    /\.spec\./,
-    /package-lock\.json/,
-    /yarn\.lock/,
-    /bun\.lock/,
-    /pnpm-lock\.yaml/,
-    /\.config\./,
-    /dist\//,
-    /build\//,
-    /\.git\//,
+    /node_modules\//, /\.min\./, /\.test\./, /\.spec\./,
+    /package-lock\.json/, /yarn\.lock/, /bun\.lock/, /pnpm-lock\.yaml/,
+    /\.config\./, /dist\//, /build\//, /\.git\//,
   ];
 
   return !skipPatterns.some(pattern => pattern.test(filename));
