@@ -673,40 +673,11 @@ Opens Prisma Studio at `http://localhost:5555` for visual database management.
 
 ## 🧪 Testing
 
-### Run All Tests
+Tests can be added using Bun's built-in test runner. Run tests with:
 
 ```bash
 bun test
 ```
-
-### Run Tests for Specific Package
-
-```bash
-# API tests
-cd apps/api
-bun test
-
-# Worker tests (if available)
-cd apps/worker
-bun test
-```
-
-### Test Coverage
-
-Current test files:
-- `apps/api/src/routes/analysis.test.ts` - API endpoint validation tests
-- `apps/api/src/routes/health.test.ts` - Health check endpoint tests
-
-**Test Coverage:**
-- ✅ Input validation (invalid URLs, negative PR numbers)
-- ✅ Request format validation (JSON parsing, content-type)
-- ✅ Error response handling
-- ✅ Health check endpoint
-
-**Areas for improvement:**
-- Integration tests with real database
-- Worker processing tests
-- E2E workflow tests
 
 ---
 
